@@ -78,6 +78,7 @@
             // 
             // button4
             // 
+            this.button4.Enabled = false;
             this.button4.Location = new System.Drawing.Point(22, 208);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(94, 29);
@@ -94,6 +95,7 @@
             this.listView1.Size = new System.Drawing.Size(734, 158);
             this.listView1.TabIndex = 0;
             this.listView1.UseCompatibleStateImageBehavior = false;
+            this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
             // 
             // mainwindow
             // 
