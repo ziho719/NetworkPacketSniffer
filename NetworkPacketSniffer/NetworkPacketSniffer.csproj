@@ -8,4 +8,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="SharpPcap">
+      <HintPath>..\SharpPcap-4.2.0\Debug\SharpPcap.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
