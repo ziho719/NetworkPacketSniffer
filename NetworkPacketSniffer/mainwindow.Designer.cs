@@ -38,7 +38,7 @@
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(144, 40);
+            this.comboBox1.Location = new System.Drawing.Point(144, 21);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(449, 28);
             this.comboBox1.TabIndex = 3;
@@ -47,7 +47,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(22, 40);
+            this.button2.Location = new System.Drawing.Point(22, 21);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(114, 29);
             this.button2.TabIndex = 5;
@@ -57,7 +57,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(22, 162);
+            this.button3.Location = new System.Drawing.Point(22, 123);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(94, 29);
             this.button3.TabIndex = 6;
@@ -68,7 +68,7 @@
             // button4
             // 
             this.button4.Enabled = false;
-            this.button4.Location = new System.Drawing.Point(22, 208);
+            this.button4.Location = new System.Drawing.Point(133, 123);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(94, 29);
             this.button4.TabIndex = 7;
@@ -78,13 +78,12 @@
             // 
             // listView1
             // 
-            this.listView1.Location = new System.Drawing.Point(144, 162);
-            this.listView1.MultiSelect = false;
+            this.listView1.Location = new System.Drawing.Point(22, 166);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(734, 158);
-            this.listView1.TabIndex = 0;
+            this.listView1.Size = new System.Drawing.Size(895, 185);
+            this.listView1.TabIndex = 9;
             this.listView1.UseCompatibleStateImageBehavior = false;
-            this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
+            this.listView1.View = System.Windows.Forms.View.Details;
             // 
             // mainwindow
             // 
