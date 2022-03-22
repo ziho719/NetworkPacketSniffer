@@ -7,26 +7,17 @@ namespace NetworkPacketSniffer
     {
         public CaptureDeviceList devices;
         public ICaptureDevice? curr_dev = null;
+        private PacketArrivalEventHandler arrivalEventHandler;
 
         public mainwindow()
         {
             InitializeComponent();
-            devices = CaptureDeviceList.Instance;
-        }
-
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            // Retrieve the device list
             devices = CaptureDeviceList.Instance;
             foreach (ICaptureDevice dev in devices)
             {
                 comboBox1.Items.Add(dev.Description);
             }
             comboBox1.SelectedIndex = 0;
-
-            // Print out the available network devices
-            Debug.WriteLine("²é¿´Íø¿¨");
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -65,12 +56,10 @@ namespace NetworkPacketSniffer
                 return;
             }
 
-            //https://www.codeproject.com/Articles/12458/SharpPcap-A-Packet-Capture-Framework-for-NET
-            // Register our handler function to the 'packet arrival' event
             curr_dev = devices[i];
-            curr_dev.OnPacketArrival +=
-                new SharpPcap.PacketArrivalEventHandler(device_OnPacketArrival);
-            curr_dev.Open(DeviceMode.Promiscuous);
+            arrivalEventHandler = new PacketArrivalEventHandler(device_OnPacketArrival);
+            curr_dev.OnPacketArrival += arrivalEventHandler;
+            curr_dev.Open();
 
             // Start the capturing process
             curr_dev.StartCapture();
@@ -81,12 +70,9 @@ namespace NetworkPacketSniffer
 
         }
 
-        private static void device_OnPacketArrival(object sender, CaptureEventArgs packet)
+        private static void device_OnPacketArrival(object sender, PacketCapture e)
         {
-            DateTime time = packet.Packet.Timeval.Date;
-            int len = packet.Packet.Data.Length;
-            Debug.WriteLine("{0}:{1}:{2},{3} Len={4}",
-                time.Hour, time.Minute, time.Second, time.Millisecond, len);
+            Debug.WriteLine(e.GetPacket());
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -99,6 +85,7 @@ namespace NetworkPacketSniffer
             }
             curr_dev.StopCapture();
             curr_dev.Close();
+            curr_dev.OnPacketArrival -= arrivalEventHandler;
             curr_dev = null;
             button3.Enabled = true;
             button4.Enabled = false;
