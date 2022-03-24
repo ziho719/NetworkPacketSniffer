@@ -40,6 +40,10 @@ namespace NetworkPacketSniffer
             listView1.Columns.Add("网络层协议", 90, HorizontalAlignment.Left);
             listView1.Columns.Add("会话层协议", 90, HorizontalAlignment.Left);
             listView1.Columns.Add("应用层协议", 90, HorizontalAlignment.Left);
+
+            comboBox2.Items.Add("and");
+            comboBox2.Items.Add("or");
+            comboBox2.SelectedIndex = 0;
         }
 
 
@@ -64,6 +68,29 @@ namespace NetworkPacketSniffer
             MessageBox.Show(dev.ToString(), "info");
         }
 
+        private string filter = "";
+
+        private void button10_Click(object sender, EventArgs e)
+        {
+            string f = "";
+            if (filter != "")
+            {
+                if (comboBox2.SelectedIndex == 1)
+                    f += " or ";
+                else
+                    f += " and ";
+
+            }
+            if (checkBox1.Checked)
+                f += "not ";
+            f += textBox1.Text;
+            filter += f;
+        }
+
+        private void button11_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(filter, "info");
+        }
 
         private void button3_Click(object sender, EventArgs e)
         {
@@ -90,13 +117,15 @@ namespace NetworkPacketSniffer
             arrivalEventHandler = new PacketArrivalEventHandler(device_OnPacketArrival);
             curr_dev.OnPacketArrival += arrivalEventHandler;
             curr_dev.Open();
-
+            curr_dev.Filter = filter;
             // Start the capturing process
             curr_dev.StartCapture();
             Debug.WriteLine("Listening on {0}", curr_dev.Description);
 
             button3.Enabled = false;
             button4.Enabled = true;
+            button10.Enabled = false;
+            button12.Enabled = false;
 
         }
 
@@ -253,6 +282,8 @@ namespace NetworkPacketSniffer
             curr_dev = null;
             button3.Enabled = true;
             button4.Enabled = false;
+            button10.Enabled = true;
+            button12.Enabled = true;
 
             BackgroundThreadStop = true;
             backgroundThread.Join();
@@ -381,6 +412,11 @@ namespace NetworkPacketSniffer
                 text += data[i].ToString("X2");
             }
             MessageBox.Show(text, "info");
+        }
+
+        private void button12_Click(object sender, EventArgs e)
+        {
+            filter = "";
         }
     }
 }
