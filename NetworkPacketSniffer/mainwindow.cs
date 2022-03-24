@@ -33,13 +33,13 @@ namespace NetworkPacketSniffer
             listView1.View = View.Details;
             listView1.Columns.Add("序号", 50, HorizontalAlignment.Left);
             listView1.Columns.Add("时间", 150, HorizontalAlignment.Left);
-            listView1.Columns.Add("源MAC", 150, HorizontalAlignment.Left);
-            listView1.Columns.Add("目标MAC", 150, HorizontalAlignment.Left);
+            listView1.Columns.Add("源地址", 140, HorizontalAlignment.Left);
+            listView1.Columns.Add("目标地址", 140, HorizontalAlignment.Left);
             listView1.Columns.Add("长度", 80, HorizontalAlignment.Left);
-            listView1.Columns.Add("链路层协议", 100, HorizontalAlignment.Left);
-            listView1.Columns.Add("网络层协议", 100, HorizontalAlignment.Left);
-            listView1.Columns.Add("会话层协议", 100, HorizontalAlignment.Left);
-            listView1.Columns.Add("应用层协议", 100, HorizontalAlignment.Left);
+            listView1.Columns.Add("链路层协议", 90, HorizontalAlignment.Left);
+            listView1.Columns.Add("网络层协议", 90, HorizontalAlignment.Left);
+            listView1.Columns.Add("会话层协议", 90, HorizontalAlignment.Left);
+            listView1.Columns.Add("应用层协议", 90, HorizontalAlignment.Left);
         }
 
 
@@ -138,8 +138,29 @@ namespace NetworkPacketSniffer
                     item.SubItems[0].Text = count.ToString();
                     item.SubItems.Add(rawPacket.Timeval.Date.ToLocalTime().TimeOfDay.ToString());
                     var eth = (EthernetPacket)packet;
-                    item.SubItems.Add(eth.SourceHardwareAddress.ToString());
-                    item.SubItems.Add(eth.DestinationHardwareAddress.ToString());
+                    if (eth.HasPayloadPacket)
+                    {
+                        //显示ip地址
+                        if (eth.PayloadPacket is IPPacket)
+                        {
+                            IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                            item.SubItems.Add(ippacket.SourceAddress.ToString());
+                            item.SubItems.Add(ippacket.DestinationAddress.ToString());
+                        }
+                        else if(eth.PayloadPacket is ArpPacket)
+                        {
+                            ArpPacket arppacket = (ArpPacket)eth.PayloadPacket;
+                            item.SubItems.Add(arppacket.SenderProtocolAddress.ToString());
+                            item.SubItems.Add(arppacket.TargetProtocolAddress.ToString());
+                        }
+                    }
+                    else //否则mac地址
+                    {
+                        item.SubItems.Add(eth.SourceHardwareAddress.ToString());
+                        item.SubItems.Add(eth.DestinationHardwareAddress.ToString());
+
+                    }
+
                     item.SubItems.Add(rawPacket.Data.Length.ToString());
                     item.SubItems.Add(rawPacket.LinkLayerType.ToString());
                     item.SubItems.Add(eth.Type.ToString());
@@ -149,6 +170,8 @@ namespace NetworkPacketSniffer
                         item.SubItems.Add(ippacket.Protocol.ToString());
                     }
 
+                    
+                    item.SubItems.Add(judgeProtocol(packet)); //判断应用层协议
 
 
                     listView1.Items.Add(item);
@@ -159,6 +182,58 @@ namespace NetworkPacketSniffer
                 }
             }
             Debug.WriteLine("线程结束");
+        }
+
+        private bool judgePort(ushort sourcePort, ushort destinationPort, ushort port)
+        {
+            return sourcePort == port || destinationPort == port;
+        }
+
+        private string judgeProtocol(Packet packet)
+        {
+            String protocol = "";
+            TcpPacket tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+            if (tcpPacket != null)
+            {
+                var D = tcpPacket.DestinationPort;
+                var S = tcpPacket.SourcePort;
+                if (judgePort(S, D, 80))
+                    protocol = "HTTP";
+                else if (judgePort(S, D, 443))
+                    protocol = "HTTPS";
+                else if (judgePort(S, D, 21))
+                    protocol = "FTP控制";
+                else if (judgePort(S, D, 20))
+                    protocol = "FTP数据";
+                else if (judgePort(S, D, 110))
+                    protocol = "POP3";
+                else if (judgePort(S, D, 143))
+                    protocol = "IMAP";
+                else if (judgePort(S, D, 25))
+                    protocol = "SMTP";
+                else if (judgePort(S, D, 23))
+                    protocol = "Telnet";
+                else if (judgePort(S, D, 53))
+                    protocol = "DNS";
+            }
+
+            UdpPacket udpPacket = packet.Extract<PacketDotNet.UdpPacket>();
+            if (udpPacket != null)
+            {
+                var D = udpPacket.DestinationPort;
+                var S = udpPacket.SourcePort;
+                if (judgePort(S, D, 53))
+                    protocol = "DNS";
+                else if (judgePort(S, D, 67))
+                    protocol = "DHCP";
+                else if (judgePort(S, D, 161))
+                    protocol = "SNMP";
+                else if (judgePort(S, D, 69))
+                    protocol = "TFTP";
+                else if (judgePort(S, D, 1701))
+                    protocol = "L2TP";
+            }
+            return protocol;
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -298,11 +373,14 @@ namespace NetworkPacketSniffer
         private void button9_Click(object sender, EventArgs e)
         {
             RawCapture rawPacket = rawPacketList[select_index];
-            Packet packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
-            EthernetPacket ethpacket = (EthernetPacket)packet;
-            var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
-            //rawPacket.Data.ToString();
-            MessageBox.Show(tcpPacket.PayloadData.ToString(), "info");
+
+            byte[] data = rawPacket.Data;
+            string text = "";
+            for (int i = 0; i < data.Length; i++)
+            {
+                text += data[i].ToString("X2");
+            }
+            MessageBox.Show(text, "info");
         }
     }
 }
