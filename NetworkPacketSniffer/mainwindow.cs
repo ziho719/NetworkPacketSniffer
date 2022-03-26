@@ -41,9 +41,31 @@ namespace NetworkPacketSniffer
             listView1.Columns.Add("会话层协议", 90, HorizontalAlignment.Left);
             listView1.Columns.Add("应用层协议", 90, HorizontalAlignment.Left);
 
+            listView2.View = View.Details;
+            listView2.Columns.Add("序号", 50, HorizontalAlignment.Left);
+            listView2.Columns.Add("时间", 150, HorizontalAlignment.Left);
+            listView2.Columns.Add("源地址", 140, HorizontalAlignment.Left);
+            listView2.Columns.Add("目标地址", 140, HorizontalAlignment.Left);
+            listView2.Columns.Add("长度", 80, HorizontalAlignment.Left);
+            listView2.Columns.Add("链路层协议", 90, HorizontalAlignment.Left);
+            listView2.Columns.Add("网络层协议", 90, HorizontalAlignment.Left);
+            listView2.Columns.Add("会话层协议", 90, HorizontalAlignment.Left);
+            listView2.Columns.Add("应用层协议", 90, HorizontalAlignment.Left);
+            listView2.Visible = false;
+
             comboBox2.Items.Add("and");
             comboBox2.Items.Add("or");
             comboBox2.SelectedIndex = 0;
+
+            comboBox3.Items.Add("所有网络层协议");
+            comboBox3.Items.Add("ip");
+            comboBox3.Items.Add("arp");
+
+            comboBox4.Items.Add("所有会话层协议");
+            comboBox4.Items.Add("tcp");
+            comboBox4.Items.Add("udp");
+
+
         }
 
 
@@ -126,6 +148,8 @@ namespace NetworkPacketSniffer
             button4.Enabled = true;
             button10.Enabled = false;
             button12.Enabled = false;
+            listView1.Visible = true;
+            listView2.Visible = false;
 
         }
 
@@ -137,7 +161,7 @@ namespace NetworkPacketSniffer
             }
             
         }
-
+        private List<string> proto = new List<string>();
         private void BackgroundThread()
         {
             Debug.WriteLine("线程开启");
@@ -146,7 +170,7 @@ namespace NetworkPacketSniffer
             var count = 0;
 
 
-            while (!BackgroundThreadStop)
+            while(true)
             {
                 bool shouldSleep = true;
                 lock (QueueLock)
@@ -156,7 +180,10 @@ namespace NetworkPacketSniffer
                 }
                 if (shouldSleep)
                 {
-                    System.Threading.Thread.Sleep(100);
+                    if (BackgroundThreadStop == true)
+                        break;
+                    else
+                        System.Threading.Thread.Sleep(50);
                 }
                 else
                 {
@@ -201,17 +228,23 @@ namespace NetworkPacketSniffer
 
                     
                     item.SubItems.Add(judgeProtocol(packet)); //判断应用层协议
-
-
                     listView1.Items.Add(item);
                     count++;
 
-
-
+                    string protocol = judgeProtocol(packet);
+                    if (protocol != null && protocol!= "")
+                    {
+                        if (!proto.Contains(protocol))
+                        {
+                            proto.Add(protocol);
+                            comboBox5.Items.Add(protocol);
+                        }
+                    }
                 }
             }
             Debug.WriteLine("线程结束");
         }
+
 
         private bool judgePort(ushort sourcePort, ushort destinationPort, ushort port)
         {
@@ -291,7 +324,6 @@ namespace NetworkPacketSniffer
         }
 
         private int select_index = -1;
-
 
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -417,6 +449,196 @@ namespace NetworkPacketSniffer
         private void button12_Click(object sender, EventArgs e)
         {
             filter = "";
+        }
+
+        private List<RawCapture> filterRawPacket = new List<RawCapture>();
+        private void update_filter()
+        {
+            string protocol_selected_1 = "";
+            string protocol_selected_2 = "";
+            string protocol_selected_3 = "";
+            if(comboBox3.SelectedIndex > 0)
+            {
+                if (comboBox3.SelectedIndex == 1)
+                    protocol_selected_1 = "ip";
+                if (comboBox3.SelectedIndex == 2)
+                    protocol_selected_1 = "arp";
+            }
+            if (comboBox4.SelectedIndex > 0)
+            {
+                if (comboBox4.SelectedIndex == 1)
+                    protocol_selected_2 = "Tcp";
+                if (comboBox4.SelectedIndex == 2)
+                    protocol_selected_2 = "Udp";
+            }
+            if (comboBox5.SelectedIndex > 0)
+            {
+                protocol_selected_3 = proto[comboBox5.SelectedIndex-1];
+            }
+            string SourceAddr = textBox2.Text;
+            string DestinationAddr = textBox3.Text;
+            int SourcePort = -1;
+            int DestinationPort = -1;
+            try
+            {
+                if (textBox4.Text != "")
+                    SourcePort = int.Parse(textBox4.Text);
+                if (textBox5.Text != "")
+                    DestinationPort = int.Parse(textBox5.Text);
+            }
+            catch
+            {
+                MessageBox.Show("输入正确的端口号","error");
+                return;
+            }
+
+            filterRawPacket = new List<RawCapture>();
+            int count;
+            lock (QueueLock)
+            {
+                count = rawPacketList.Count;
+            }
+            for (int i = 0; i < count; i++)
+            {
+                RawCapture rawPacket = rawPacketList[i];
+                Packet packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
+                EthernetPacket eth = (EthernetPacket)packet;
+                var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+                var udpPacket = packet.Extract<PacketDotNet.UdpPacket>();
+
+                if (protocol_selected_1 != "")
+                {
+                    if (protocol_selected_1 == "ip" && eth.PayloadPacket is not IPPacket)
+                        continue;
+                    if (protocol_selected_1 == "arp" && eth.PayloadPacket is not ArpPacket)
+                        continue;
+                }
+                if(protocol_selected_2 != "")
+                {
+                    if (eth.PayloadPacket is IPPacket)
+                    {
+                        IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                        if (protocol_selected_2 != ippacket.Protocol.ToString())
+                            continue;
+                    }
+                }
+                if(protocol_selected_3 != "")
+                {
+                    if (protocol_selected_3 != judgeProtocol(packet))
+                        continue;
+                }
+                if(SourceAddr != "")
+                {
+                    string S;
+                    if (eth.PayloadPacket is IPPacket)
+                        S = ((IPPacket)eth.PayloadPacket).SourceAddress.ToString();
+                    else if (eth.PayloadPacket is ArpPacket)
+                        S = ((ArpPacket)eth.PayloadPacket).SenderProtocolAddress.ToString();
+                    else
+                        continue;
+                    if (SourceAddr != S)
+                        continue;
+                }
+                if (DestinationAddr != "")
+                {
+                    string D;
+                    if (eth.PayloadPacket is IPPacket)
+                        D = ((IPPacket)eth.PayloadPacket).DestinationAddress.ToString();
+                    else if (eth.PayloadPacket is ArpPacket)
+                        D = ((ArpPacket)eth.PayloadPacket).TargetProtocolAddress.ToString();
+                    else
+                        continue;
+                    if (DestinationAddr != D)
+                        continue;
+                }
+                if(SourcePort != -1)
+                {
+                    int P;
+                    if (tcpPacket != null)
+                        P = tcpPacket.SourcePort;
+                    else if (udpPacket != null)
+                        P = udpPacket.SourcePort;
+                    else
+                        continue;
+                    if (SourcePort != P)
+                        continue;
+                }
+                if (DestinationPort != -1)
+                {
+                    int P;
+                    if (tcpPacket != null)
+                        P = tcpPacket.DestinationPort;
+                    else if (udpPacket != null)
+                        P = udpPacket.DestinationPort;
+                    else
+                        continue;
+                    if (DestinationPort != P)
+                        continue;
+                }
+                filterRawPacket.Add(rawPacket);
+
+                ListViewItem item = new ListViewItem();
+                item.SubItems[0].Text = i.ToString();
+                item.SubItems.Add(rawPacket.Timeval.Date.ToLocalTime().TimeOfDay.ToString());
+                if (eth.HasPayloadPacket)
+                {
+                    //显示ip地址
+                    if (eth.PayloadPacket is IPPacket)
+                    {
+                        IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                        item.SubItems.Add(ippacket.SourceAddress.ToString());
+                        item.SubItems.Add(ippacket.DestinationAddress.ToString());
+                    }
+                    else if (eth.PayloadPacket is ArpPacket)
+                    {
+                        ArpPacket arppacket = (ArpPacket)eth.PayloadPacket;
+                        item.SubItems.Add(arppacket.SenderProtocolAddress.ToString());
+                        item.SubItems.Add(arppacket.TargetProtocolAddress.ToString());
+                    }
+                }
+                else //否则mac地址
+                {
+                    item.SubItems.Add(eth.SourceHardwareAddress.ToString());
+                    item.SubItems.Add(eth.DestinationHardwareAddress.ToString());
+
+                }
+                item.SubItems.Add(rawPacket.Data.Length.ToString());
+                item.SubItems.Add(rawPacket.LinkLayerType.ToString());
+                item.SubItems.Add(eth.Type.ToString());
+                if (eth.PayloadPacket is IPPacket)
+                {
+                    IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                    item.SubItems.Add(ippacket.Protocol.ToString());
+                }
+                item.SubItems.Add(judgeProtocol(packet)); //判断应用层协议
+                listView2.Items.Add(item);
+            }
+        }
+
+        private void button13_Click(object sender, EventArgs e)
+        {
+            //确定筛选
+            listView2.Items.Clear();
+            update_filter();
+            listView1.Visible = false;
+            listView2.Visible = true;
+        }
+
+        private void button14_Click(object sender, EventArgs e)
+        {
+            //取消筛选
+            listView1.Visible = true;
+            listView2.Visible = false;
+        }
+
+        private void listView2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Debug.WriteLine("触发了listview2 change函数");
+            int count = listView2.SelectedItems.Count;
+            if (count > 0)
+            {
+                select_index = int.Parse(listView2.SelectedItems[0].SubItems[0].Text);
+            }
         }
     }
 }
