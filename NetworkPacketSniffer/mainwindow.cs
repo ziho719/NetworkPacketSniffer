@@ -168,8 +168,6 @@ namespace NetworkPacketSniffer
             Control.CheckForIllegalCrossThreadCalls = false;
             listView1.Items.Clear();
             var count = 0;
-
-
             while(true)
             {
                 bool shouldSleep = true;
@@ -525,9 +523,9 @@ namespace NetworkPacketSniffer
                 treeView1.Nodes[count].Nodes.Add("目的端口：" + tcpPacket.DestinationPort);
                 treeView1.Nodes[count].Nodes.Add("长度：" + tcpPacket.TotalPacketLength);
                 treeView1.Nodes[count].Nodes.Add("序列号：" + tcpPacket.SequenceNumber);
-                treeView1.Nodes[count].Nodes.Add("ACK序列号" + tcpPacket.AcknowledgmentNumber);
-                treeView1.Nodes[count].Nodes.Add("flag：" + tcpPacket.Flags.ToString("x"));
+                treeView1.Nodes[count].Nodes.Add("ACK序列号：" + tcpPacket.AcknowledgmentNumber);
                 treeView1.Nodes[count].Nodes.Add("偏移量：" + tcpPacket.DataOffset);
+                treeView1.Nodes[count].Nodes.Add("flag：" + tcpPacket.Flags.ToString("x"));
                 int temp = treeView1.Nodes[count].Nodes.Count - 1;
                 var flags = Convert.ToString(tcpPacket.Flags, 2).PadLeft(8, '0');
                 treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[0] + "] congestion window reduced");
@@ -538,6 +536,8 @@ namespace NetworkPacketSniffer
                 treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[5] + "] reset");
                 treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[6] + "] syn");
                 treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[7] + "] fin");
+                treeView1.Nodes[count].Expand();
+                treeView1.Nodes[count].Nodes[temp].Expand();
 
             }
 
@@ -787,7 +787,199 @@ namespace NetworkPacketSniffer
         private void button15_Click(object sender, EventArgs e)
         {
             //跟踪
+            listView2.Items.Clear();
+            track();
+            listView1.Visible = false;
+            listView2.Visible = true;
 
+        }
+
+        private void track()
+        {
+            if(select_index < 0)
+            {
+                return;
+            }
+            RawCapture rawPacket = rawPacketList[select_index];
+            Packet packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
+            EthernetPacket eth = (EthernetPacket)packet;
+            var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+            var udpPacket = packet.Extract<PacketDotNet.UdpPacket>();
+
+            string protocol_selected_1 = "";
+            string protocol_selected_2 = "";
+            string protocol_selected_3 = "";
+
+            string SourceAddr = "";
+            string DestinationAddr = "";
+            int SourcePort = -1;
+            int DestinationPort = -1;
+            if (eth.PayloadPacket is IPPacket)
+            {
+                IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                protocol_selected_1 = "ip";
+                SourceAddr = ippacket.SourceAddress.ToString();
+                DestinationAddr = ippacket.DestinationAddress.ToString();
+            }
+            if (eth.PayloadPacket is ArpPacket)
+            {
+                protocol_selected_1 = "arp";
+                ArpPacket arppacket = (ArpPacket)eth.PayloadPacket;
+                SourceAddr = arppacket.SenderProtocolAddress.ToString();
+                DestinationAddr = arppacket.TargetProtocolAddress.ToString();
+
+            }
+            
+            if (eth.PayloadPacket is IPPacket)
+            {
+                if (tcpPacket != null)
+                {
+                    protocol_selected_2 = "Tcp";
+                    SourcePort = tcpPacket.SourcePort;
+                    DestinationPort = tcpPacket.DestinationPort;
+                }
+                        
+                if (udpPacket != null)
+                {
+                    protocol_selected_2 = "Udp";
+                    SourcePort = udpPacket.SourcePort;
+                    DestinationPort = udpPacket.DestinationPort;
+                }
+            }
+
+
+            filterRawPacket = new List<RawCapture>();
+            int count;
+            lock (QueueLock)
+            {
+                count = rawPacketList.Count;
+            }
+            for (int i = 0; i < count; i++)
+            {
+                rawPacket = rawPacketList[i];
+                packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
+                eth = (EthernetPacket)packet;
+                tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+                udpPacket = packet.Extract<PacketDotNet.UdpPacket>();
+
+                if (protocol_selected_1 != "")
+                {
+                    if (protocol_selected_1 == "ip" && eth.PayloadPacket is not IPPacket)
+                        continue;
+                    if (protocol_selected_1 == "arp" && eth.PayloadPacket is not ArpPacket)
+                        continue;
+                }
+                if (protocol_selected_2 != "")
+                {
+                    if (eth.PayloadPacket is IPPacket)
+                    {
+                        IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                        if (protocol_selected_2 != ippacket.Protocol.ToString())
+                            continue;
+                    }
+                }
+                if (protocol_selected_3 != "")
+                {
+                    if (protocol_selected_3 != judgeProtocol(packet))
+                        continue;
+                }
+                if (SourceAddr != "" && SourcePort!= -1)
+                {
+                    string SA = "",DA = "";
+                    int SP = -1, DP = -1;
+                    if (eth.PayloadPacket is IPPacket)
+                    {
+                        IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                        SA = ippacket.SourceAddress.ToString();
+                        DA = ippacket.DestinationAddress.ToString();
+                        if (tcpPacket != null)
+                        {
+                            protocol_selected_2 = "Tcp";
+                            SP = tcpPacket.SourcePort;
+                            DP = tcpPacket.DestinationPort;
+                        }
+
+                        if (udpPacket != null)
+                        {
+                            protocol_selected_2 = "Udp";
+                            SP = udpPacket.SourcePort;
+                            DP = udpPacket.DestinationPort;
+                        }
+                    }
+                    else
+                        continue;
+                    if (
+                        !(
+                           (SourceAddr == SA && DestinationAddr == DA && SourcePort == SP && DestinationPort == DP)
+                        || (SourceAddr == DA && DestinationAddr == SA && SourcePort == DP && DestinationPort == SP)
+                        ))
+                        continue;
+                }
+                else if (SourceAddr != "")
+                {
+                    string SA = "", DA = "";
+                    if (eth.PayloadPacket is IPPacket)
+                    {
+                        IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                        SA= ippacket.SourceAddress.ToString();
+                        DA = ippacket.DestinationAddress.ToString();
+                    }
+                    else if (eth.PayloadPacket is ArpPacket)
+                    {
+                        ArpPacket arppacket = (ArpPacket)eth.PayloadPacket;
+                        SA = arppacket.SenderProtocolAddress.ToString();
+                        DA = arppacket.TargetProtocolAddress.ToString();
+
+                    }
+                    else
+                        continue;
+                    if (
+                        !(
+                           (SourceAddr == SA && DestinationAddr == DA)
+                        || (SourceAddr == DA && DestinationAddr == SA)
+                        ))
+                        continue;
+                }
+
+
+                filterRawPacket.Add(rawPacket);
+
+                ListViewItem item = new ListViewItem();
+                item.SubItems[0].Text = i.ToString();
+                item.SubItems.Add(rawPacket.Timeval.Date.ToLocalTime().TimeOfDay.ToString());
+                if (eth.HasPayloadPacket)
+                {
+                    //显示ip地址
+                    if (eth.PayloadPacket is IPPacket)
+                    {
+                        IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                        item.SubItems.Add(ippacket.SourceAddress.ToString());
+                        item.SubItems.Add(ippacket.DestinationAddress.ToString());
+                    }
+                    else if (eth.PayloadPacket is ArpPacket)
+                    {
+                        ArpPacket arppacket = (ArpPacket)eth.PayloadPacket;
+                        item.SubItems.Add(arppacket.SenderProtocolAddress.ToString());
+                        item.SubItems.Add(arppacket.TargetProtocolAddress.ToString());
+                    }
+                }
+                else //否则mac地址
+                {
+                    item.SubItems.Add(eth.SourceHardwareAddress.ToString());
+                    item.SubItems.Add(eth.DestinationHardwareAddress.ToString());
+
+                }
+                item.SubItems.Add(rawPacket.Data.Length.ToString());
+                item.SubItems.Add(rawPacket.LinkLayerType.ToString());
+                item.SubItems.Add(eth.Type.ToString());
+                if (eth.PayloadPacket is IPPacket)
+                {
+                    IPPacket ippacket = (IPPacket)eth.PayloadPacket;
+                    item.SubItems.Add(ippacket.Protocol.ToString());
+                }
+                item.SubItems.Add(judgeProtocol(packet)); //判断应用层协议
+                listView2.Items.Add(item);
+            }
         }
     }
 }
