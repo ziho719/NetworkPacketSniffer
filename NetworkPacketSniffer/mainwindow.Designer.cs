@@ -62,6 +62,9 @@
             this.comboBox3 = new System.Windows.Forms.ComboBox();
             this.comboBox4 = new System.Windows.Forms.ComboBox();
             this.comboBox5 = new System.Windows.Forms.ComboBox();
+            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.treeView1 = new System.Windows.Forms.TreeView();
+            this.button15 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // comboBox1
@@ -119,71 +122,78 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(796, 772);
+            this.button1.Location = new System.Drawing.Point(784, 775);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(70, 29);
             this.button1.TabIndex = 10;
             this.button1.Text = "链路层";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Visible = false;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // button5
             // 
-            this.button5.Location = new System.Drawing.Point(796, 816);
+            this.button5.Location = new System.Drawing.Point(784, 819);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(70, 29);
             this.button5.TabIndex = 11;
             this.button5.Text = "arp";
             this.button5.UseVisualStyleBackColor = true;
+            this.button5.Visible = false;
             this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(796, 862);
+            this.button6.Location = new System.Drawing.Point(784, 865);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(70, 29);
             this.button6.TabIndex = 12;
             this.button6.Text = "ip";
             this.button6.UseVisualStyleBackColor = true;
+            this.button6.Visible = false;
             this.button6.Click += new System.EventHandler(this.button6_Click);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(816, 740);
+            this.label1.Location = new System.Drawing.Point(804, 743);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(142, 20);
             this.label1.TabIndex = 13;
             this.label1.Text = "查看包信息(debug)";
+            this.label1.Visible = false;
             // 
             // button7
             // 
-            this.button7.Location = new System.Drawing.Point(903, 772);
+            this.button7.Location = new System.Drawing.Point(891, 775);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(70, 29);
             this.button7.TabIndex = 16;
             this.button7.Text = "tcp";
             this.button7.UseVisualStyleBackColor = true;
+            this.button7.Visible = false;
             this.button7.Click += new System.EventHandler(this.button7_Click);
             // 
             // button8
             // 
-            this.button8.Location = new System.Drawing.Point(903, 816);
+            this.button8.Location = new System.Drawing.Point(891, 819);
             this.button8.Name = "button8";
             this.button8.Size = new System.Drawing.Size(70, 29);
             this.button8.TabIndex = 15;
             this.button8.Text = "udp";
             this.button8.UseVisualStyleBackColor = true;
+            this.button8.Visible = false;
             this.button8.Click += new System.EventHandler(this.button8_Click);
             // 
             // button9
             // 
-            this.button9.Location = new System.Drawing.Point(903, 862);
+            this.button9.Location = new System.Drawing.Point(891, 865);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(70, 29);
             this.button9.TabIndex = 14;
             this.button9.Text = "报文";
             this.button9.UseVisualStyleBackColor = true;
+            this.button9.Visible = false;
             this.button9.Click += new System.EventHandler(this.button9_Click);
             // 
             // comboBox2
@@ -337,7 +347,7 @@
             // 
             // button13
             // 
-            this.button13.Location = new System.Drawing.Point(730, 131);
+            this.button13.Location = new System.Drawing.Point(772, 131);
             this.button13.Name = "button13";
             this.button13.Size = new System.Drawing.Size(94, 29);
             this.button13.TabIndex = 35;
@@ -358,7 +368,7 @@
             // comboBox3
             // 
             this.comboBox3.FormattingEnabled = true;
-            this.comboBox3.Location = new System.Drawing.Point(613, 42);
+            this.comboBox3.Location = new System.Drawing.Point(613, 37);
             this.comboBox3.Name = "comboBox3";
             this.comboBox3.Size = new System.Drawing.Size(91, 28);
             this.comboBox3.TabIndex = 37;
@@ -367,7 +377,7 @@
             // comboBox4
             // 
             this.comboBox4.FormattingEnabled = true;
-            this.comboBox4.Location = new System.Drawing.Point(613, 78);
+            this.comboBox4.Location = new System.Drawing.Point(613, 68);
             this.comboBox4.Name = "comboBox4";
             this.comboBox4.Size = new System.Drawing.Size(91, 28);
             this.comboBox4.TabIndex = 38;
@@ -378,17 +388,47 @@
             this.comboBox5.FormattingEnabled = true;
             this.comboBox5.Items.AddRange(new object[] {
             "所有协议"});
-            this.comboBox5.Location = new System.Drawing.Point(613, 112);
+            this.comboBox5.Location = new System.Drawing.Point(613, 97);
             this.comboBox5.Name = "comboBox5";
             this.comboBox5.Size = new System.Drawing.Size(91, 28);
             this.comboBox5.TabIndex = 39;
             this.comboBox5.Text = "应用层";
+            // 
+            // richTextBox1
+            // 
+            this.richTextBox1.Font = new System.Drawing.Font("Microsoft YaHei UI", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.richTextBox1.Location = new System.Drawing.Point(411, 412);
+            this.richTextBox1.Name = "richTextBox1";
+            this.richTextBox1.ReadOnly = true;
+            this.richTextBox1.Size = new System.Drawing.Size(562, 312);
+            this.richTextBox1.TabIndex = 40;
+            this.richTextBox1.Text = "";
+            // 
+            // treeView1
+            // 
+            this.treeView1.Location = new System.Drawing.Point(22, 412);
+            this.treeView1.Name = "treeView1";
+            this.treeView1.Size = new System.Drawing.Size(383, 312);
+            this.treeView1.TabIndex = 41;
+            // 
+            // button15
+            // 
+            this.button15.Location = new System.Drawing.Point(622, 131);
+            this.button15.Name = "button15";
+            this.button15.Size = new System.Drawing.Size(125, 29);
+            this.button15.TabIndex = 42;
+            this.button15.Text = "跟踪选定的包";
+            this.button15.UseVisualStyleBackColor = true;
+            this.button15.Click += new System.EventHandler(this.button15_Click);
             // 
             // mainwindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(985, 894);
+            this.Controls.Add(this.button15);
+            this.Controls.Add(this.treeView1);
+            this.Controls.Add(this.richTextBox1);
             this.Controls.Add(this.comboBox5);
             this.Controls.Add(this.comboBox4);
             this.Controls.Add(this.comboBox3);
@@ -466,5 +506,8 @@
         private ComboBox comboBox3;
         private ComboBox comboBox4;
         private ComboBox comboBox5;
+        private RichTextBox richTextBox1;
+        private TreeView treeView1;
+        private Button button15;
     }
 }

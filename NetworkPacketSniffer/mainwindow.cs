@@ -38,7 +38,7 @@ namespace NetworkPacketSniffer
             listView1.Columns.Add("长度", 80, HorizontalAlignment.Left);
             listView1.Columns.Add("链路层协议", 90, HorizontalAlignment.Left);
             listView1.Columns.Add("网络层协议", 90, HorizontalAlignment.Left);
-            listView1.Columns.Add("会话层协议", 90, HorizontalAlignment.Left);
+            listView1.Columns.Add("传输层协议", 90, HorizontalAlignment.Left);
             listView1.Columns.Add("应用层协议", 90, HorizontalAlignment.Left);
 
             listView2.View = View.Details;
@@ -49,7 +49,7 @@ namespace NetworkPacketSniffer
             listView2.Columns.Add("长度", 80, HorizontalAlignment.Left);
             listView2.Columns.Add("链路层协议", 90, HorizontalAlignment.Left);
             listView2.Columns.Add("网络层协议", 90, HorizontalAlignment.Left);
-            listView2.Columns.Add("会话层协议", 90, HorizontalAlignment.Left);
+            listView2.Columns.Add("传输层协议", 90, HorizontalAlignment.Left);
             listView2.Columns.Add("应用层协议", 90, HorizontalAlignment.Left);
             listView2.Visible = false;
 
@@ -57,11 +57,11 @@ namespace NetworkPacketSniffer
             comboBox2.Items.Add("or");
             comboBox2.SelectedIndex = 0;
 
-            comboBox3.Items.Add("所有网络层协议");
+            comboBox3.Items.Add("所有");
             comboBox3.Items.Add("ip");
             comboBox3.Items.Add("arp");
 
-            comboBox4.Items.Add("所有会话层协议");
+            comboBox4.Items.Add("所有");
             comboBox4.Items.Add("tcp");
             comboBox4.Items.Add("udp");
 
@@ -332,6 +332,8 @@ namespace NetworkPacketSniffer
             if (count > 0)
             {
                 select_index = int.Parse(listView1.SelectedItems[0].SubItems[0].Text);
+                show_text();
+                show_detail();
             }
         }
 
@@ -397,7 +399,6 @@ namespace NetworkPacketSniffer
                 System.Net.IPAddress dstIp = ipPacket.DestinationAddress;
                 int srcPort = tcpPacket.SourcePort;
                 int dstPort = tcpPacket.DestinationPort;
-
       
                 Debug.WriteLine("{0}:{1} -> {2}:{3}",
                     srcIp, srcPort, dstIp, dstPort);
@@ -438,17 +439,116 @@ namespace NetworkPacketSniffer
             RawCapture rawPacket = rawPacketList[select_index];
 
             byte[] data = rawPacket.Data;
-            string text = "";
-            for (int i = 0; i < data.Length; i++)
-            {
-                text += data[i].ToString("X2");
-            }
-            MessageBox.Show(text, "info");
+
+            MessageBox.Show(System.Text.Encoding.Default.GetString(data), "info");
         }
 
         private void button12_Click(object sender, EventArgs e)
         {
             filter = "";
+        }
+
+        private void show_detail()
+        {
+            RawCapture rawPacket = rawPacketList[select_index];
+            Packet packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
+            EthernetPacket eth = (EthernetPacket)packet;
+            var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+            var udpPacket = packet.Extract<PacketDotNet.UdpPacket>();
+
+            int count = 0;
+            treeView1.BeginUpdate();
+            treeView1.Nodes.Clear();
+            treeView1.Nodes.Add("原始数据包:" + select_index.ToString());
+            treeView1.Nodes[count].Nodes.Add("链路层类型：" + rawPacket.LinkLayerType.ToString());
+            treeView1.Nodes[count].Nodes.Add("捕获时间：" + rawPacket.Timeval.Date.ToLocalTime().TimeOfDay);
+            treeView1.Nodes[count].Nodes.Add("长度：" + rawPacket.Data.Length.ToString());
+            count++;
+
+            treeView1.Nodes.Add("链路层");
+            treeView1.Nodes[count].Nodes.Add("源MAC地址：" + eth.SourceHardwareAddress.ToString());
+            treeView1.Nodes[count].Nodes.Add("目标MAC地址：" + eth.DestinationHardwareAddress.ToString());
+            treeView1.Nodes[count].Nodes.Add("上层协议：" + eth.Type.ToString());
+            count++;
+
+            treeView1.Nodes.Add("网络层");
+            if (eth.PayloadPacket is PacketDotNet.ArpPacket)
+            {
+                ArpPacket arppacket = (ArpPacket)eth.PayloadPacket;
+                treeView1.Nodes[count].Nodes.Add("协议类型：ARP");
+                treeView1.Nodes[count].Nodes.Add("操作：" + arppacket.Operation);
+                treeView1.Nodes[count].Nodes.Add("协议地址类型：" + arppacket.ProtocolAddressType);
+                treeView1.Nodes[count].Nodes.Add("协议地址长度：" + arppacket.ProtocolAddressLength);
+                treeView1.Nodes[count].Nodes.Add("发送者协议地址：" + arppacket.SenderProtocolAddress.ToString());
+                treeView1.Nodes[count].Nodes.Add("目标协议地址：" + arppacket.TargetProtocolAddress.ToString());
+                count++;
+            }
+
+            if (eth.PayloadPacket is IPPacket)
+            {
+                IPPacket ippacket = (PacketDotNet.IPPacket)eth.PayloadPacket;
+                treeView1.Nodes[count].Nodes.Add("协议类型：" + eth.Type.ToString());
+                treeView1.Nodes[count].Nodes.Add("数据包长度：" + ippacket.TotalLength);
+                treeView1.Nodes[count].Nodes.Add("版本：" + ippacket.Version);
+                treeView1.Nodes[count].Nodes.Add("首部长度：" + ippacket.HeaderLength);
+                treeView1.Nodes[count].Nodes.Add("源ip地址：" + ippacket.SourceAddress.ToString());
+                treeView1.Nodes[count].Nodes.Add("目的ip地址：" + ippacket.DestinationAddress.ToString());
+                treeView1.Nodes[count].Nodes.Add("生存时间：" + ippacket.TimeToLive.ToString());
+                treeView1.Nodes[count].Nodes.Add("上层协议：" + ippacket.Protocol.ToString());
+
+                if (ippacket is PacketDotNet.IPv4Packet)
+                {
+                    IPv4Packet ipv4 = (PacketDotNet.IPv4Packet)ippacket;
+                    treeView1.Nodes[count].Nodes.Add("IPv4数据包");
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("校验码：" + ipv4.Checksum);
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("校验码状态：" + ipv4.ValidChecksum.ToString());
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("分片标志：" + ipv4.FragmentFlags);
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("片偏移：" + ipv4.FragmentOffset);
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("标识：" + ipv4.Id);
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("TOS服务类型：" + ipv4.TypeOfService);
+                }
+                if (ippacket is PacketDotNet.IPv6Packet)
+                {
+                    IPv6Packet ipv6 = (PacketDotNet.IPv6Packet)ippacket;
+                    treeView1.Nodes[count].Nodes.Add("IPv6数据包：");
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("流量类型：" + ipv6.TrafficClass);
+                    treeView1.Nodes[count].Nodes[8].Nodes.Add("流标签：" + ipv6.FlowLabel);
+                }
+                count++;
+            }
+
+            treeView1.Nodes.Add("传输层");
+            if (tcpPacket != null)
+            {
+                treeView1.Nodes[count].Nodes.Add("协议类型：Tcp");
+                treeView1.Nodes[count].Nodes.Add("源端口：" + tcpPacket.SourcePort);
+                treeView1.Nodes[count].Nodes.Add("目的端口：" + tcpPacket.DestinationPort);
+                treeView1.Nodes[count].Nodes.Add("长度：" + tcpPacket.TotalPacketLength);
+                treeView1.Nodes[count].Nodes.Add("序列号：" + tcpPacket.SequenceNumber);
+                treeView1.Nodes[count].Nodes.Add("ACK序列号" + tcpPacket.AcknowledgmentNumber);
+                treeView1.Nodes[count].Nodes.Add("flag：" + tcpPacket.Flags.ToString("x"));
+                treeView1.Nodes[count].Nodes.Add("偏移量：" + tcpPacket.DataOffset);
+                int temp = treeView1.Nodes[count].Nodes.Count - 1;
+                var flags = Convert.ToString(tcpPacket.Flags, 2).PadLeft(8, '0');
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[0] + "] congestion window reduced");
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[1] + "] Ecn - echo");
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[2] + "] urgent");
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[3] + "] acknowledgement");
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[4] + "] push");
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[5] + "] reset");
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[6] + "] syn");
+                treeView1.Nodes[count].Nodes[temp].Nodes.Add("[" + flags[7] + "] fin");
+
+            }
+
+            if (udpPacket != null)
+            {
+                treeView1.Nodes[count].Nodes.Add("协议类型：Udp");
+                treeView1.Nodes[count].Nodes.Add("源端口：" + udpPacket.SourcePort);
+                treeView1.Nodes[count].Nodes.Add("目的端口：" + udpPacket.DestinationPort);
+                treeView1.Nodes[count].Nodes.Add("长度：" + udpPacket.Length);
+            }
+            treeView1.EndUpdate();
         }
 
         private List<RawCapture> filterRawPacket = new List<RawCapture>();
@@ -638,7 +738,56 @@ namespace NetworkPacketSniffer
             if (count > 0)
             {
                 select_index = int.Parse(listView2.SelectedItems[0].SubItems[0].Text);
+                show_text();
+                show_detail();
             }
+        }
+
+        private void show_text()
+        {
+            RawCapture rawPacket = rawPacketList[select_index];
+            string[] packetDetailString = new string[rawPacket.Data.Length / 16 + 1];
+
+            for (int i = 0; i <= (rawPacket.Data.Length - 1) / 16; i++)
+            {
+                packetDetailString[i] = i.ToString("X4");
+                int j;
+                for (j = 0; j < 16; j++)
+                {
+                    if (j % 8 == 0)
+                        packetDetailString[i] += "  ";
+                    if (i * 16 + j < rawPacket.Data.Length)
+                        packetDetailString[i] += rawPacket.Data[i * 16 + j].ToString("X2") + " ";
+                    else
+                        packetDetailString[i] += "     ";
+                }
+                packetDetailString[i] += "      ";
+                for (j = 0; j < 16; j++)
+                {
+                    if (i * 16 + j < rawPacket.Data.Length)
+                    {
+                        if (rawPacket.Data[i * 16 + j] < 32 || rawPacket.Data[i * 16 + j] > 126)
+                            packetDetailString[i] += ".";
+                        else
+                            packetDetailString[i] += Convert.ToChar(rawPacket.Data[i * 16 + j]);
+                    }
+                    else
+                        packetDetailString[i] += " ";
+                }
+            }
+            richTextBox1.Text = "";
+            for (int i = 0; i <= rawPacket.Data.Length / 16; i++)
+            {
+                richTextBox1.Text += packetDetailString[i] + "\n";
+            }
+        }
+
+        
+
+        private void button15_Click(object sender, EventArgs e)
+        {
+            //跟踪
+
         }
     }
 }
